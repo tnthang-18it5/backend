@@ -1,10 +1,11 @@
-import { Controller, Get, HttpStatus, Req, UseGuards, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Req, UseGuards, Post, Body, Query, UsePipes } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthRequest } from '../../dto';
 import { AccountDto, VerifyEmailDto } from './dto';
 import { Request } from 'express';
 import { JwtGuard } from './JwtGuard';
+import { MainValidationPipe } from '../../utils/validate';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -28,16 +29,19 @@ export class AuthController {
   }
 
   @Post('register')
+  @UsePipes(new MainValidationPipe())
   register(@Body() body: AccountDto) {
     return this.authService.register(body);
   }
 
   @Get('verify-email')
+  @UsePipes(new MainValidationPipe())
   verifyEmail(@Query() query: VerifyEmailDto) {
     return this.authService.verifyEmail(query.token);
   }
 
   @Post('login')
+  @UsePipes(new MainValidationPipe())
   login(@Body() body: AccountDto) {
     return this.authService.login(body);
   }
