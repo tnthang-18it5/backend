@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { Role } from '../../constants';
 import { Roles } from '../../decorator/roles.decorator';
 import { MainValidationPipe } from '../../utils/validate';
@@ -15,6 +15,12 @@ export class PostController {
   @UsePipes(new MainValidationPipe())
   getAll(@Query() query: PostRequestDto) {
     return this.postService.getAll(query);
+  }
+
+  @Get(':slug')
+  @UsePipes(new MainValidationPipe())
+  getPost(@Param('slug') slug: string) {
+    return this.postService.getPost(slug);
   }
 
   @Roles(Role.ADMIN, Role.DOCTOR)

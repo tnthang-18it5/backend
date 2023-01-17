@@ -25,7 +25,7 @@ export class AuthService {
   async loginFB(fbId?: string, email?: string) {
     let data;
     if (fbId) {
-      const userExist = await this.userCollection.findOne({ userId: fbId });
+      const userExist = await this.userCollection.findOne({ userId: fbId }, { projection: { password: 0 } });
       if (!userExist) {
         data = await this.userCollection.insertOne({ userId: fbId, email, role: Role.USER });
       } else {
@@ -47,12 +47,16 @@ export class AuthService {
     };
 
     return {
-      accessToken: this.jwtService.sign(payload, { secret: ConfigService.getInstance().get('JWT_SECRET') })
+      accessToken: this.jwtService.sign(payload, { secret: ConfigService.getInstance().get('JWT_SECRET') }),
+      user: data
     };
   }
 
   async getProfile(id: string) {
-    return await this.userCollection.findOne<any>({ _id: new ObjectId(id) }, { projection: {} });
+    return await this.userCollection.findOne<any>(
+      { _id: new ObjectId(id) },
+      { projection: { password: 0, updatedAt: 0 } }
+    );
   }
 
   async register(input: AccountDto) {

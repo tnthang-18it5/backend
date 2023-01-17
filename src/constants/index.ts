@@ -9,3 +9,9 @@ export enum Role {
   DOCTOR = 'doctor',
   USER = 'user'
 }
+
+export const PostType = {
+  NEWEST: 'newest',
+  POPULAR: 'popular',
+  RATE: 'rate'
+};

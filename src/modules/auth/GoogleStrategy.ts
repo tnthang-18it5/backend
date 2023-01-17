@@ -5,12 +5,12 @@ import { ConfigService } from '../../config';
 
 const configService = ConfigService.getInstance();
 @Injectable()
-export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
+export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor() {
     super({
       clientID: configService.get('FB_APP_ID'),
       clientSecret: configService.get('FB_SECRET'),
-      callbackURL: configService.get('DOMAIN') + '/api/v1/auth/facebook/redirect',
+      callbackURL: configService.get('DOMAIN') + '/api/auth/facebook/redirect',
       scope: ['public_profile', 'email']
     });
   }
