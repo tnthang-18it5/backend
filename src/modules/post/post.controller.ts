@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Req, UseGuards, UsePipes, Body, Delete } from '@nestjs/common';
 import { Role } from '../../constants';
 import { Roles } from '../../decorator/roles.decorator';
 import { MainValidationPipe } from '../../utils/validate';
@@ -6,7 +6,9 @@ import { JwtGuard } from '../auth/JwtGuard';
 import { RolesGuard } from '../auth/RolesGuard';
 import { PostRequestDto } from './dto';
 import { PostService } from './post.service';
-
+import { AuthRequest } from '../../dto';
+import { parseToken } from '../auth/ParseToken';
+import { Request } from 'express';
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -19,8 +21,9 @@ export class PostController {
 
   @Get(':slug')
   @UsePipes(new MainValidationPipe())
-  getPost(@Param('slug') slug: string) {
-    return this.postService.getPost(slug);
+  async getPost(@Param('slug') slug: string, @Req() req: Request) {
+    const parse = await parseToken(req);
+    return this.postService.getPost(slug, parse?.userId);
   }
 
   @Roles(Role.ADMIN, Role.DOCTOR)
@@ -28,5 +31,40 @@ export class PostController {
   @Post()
   createPost(@Req() req: any) {
     return true;
+  }
+
+  @Get(':id/like')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  likePost(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.postService.likePost(id, req.user.id);
+  }
+
+  @Get(':id/bookmark')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  bookmarkPost(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.postService.bookmarkPost(id, req.user.id);
+  }
+
+  @Get(':id/comment')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  getComments(@Param('id') id: string) {
+    return this.postService.getComments(id);
+  }
+
+  @Post(':id/comment')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  newComment(@Param('id') id: string, @Req() req: AuthRequest, @Body() body: { message: string }) {
+    return this.postService.newComment(id, req.user.id, body.message);
+  }
+
+  @Delete('/comment/:id')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  delComment(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.postService.delComment(id);
   }
 }
