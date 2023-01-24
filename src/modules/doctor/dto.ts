@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Pagination } from '../../dto';
 
 export class DoctorCreateDto {
@@ -11,4 +11,24 @@ export class DoctorRequestDto extends Pagination {
   @IsString()
   @IsOptional()
   keyword: string;
+}
+
+export class TimeServingCreateDto {
+  @IsString()
+  @IsNotEmpty()
+  day: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  from: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  to: number;
+}
+
+export class TimeServingDeleteDto {
+  @IsString()
+  @IsNotEmpty()
+  day: string;
 }

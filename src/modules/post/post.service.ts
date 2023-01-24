@@ -6,8 +6,8 @@ import { getPagination } from '../../utils/pagination';
 import { searchKeyword } from '../../utils/searchKeyword';
 import { PostRequestDto } from './dto';
 import { ObjectId } from 'mongodb';
-import slug from 'slug';
-import randomstring from 'randomstring';
+import * as slugTool from 'slug';
+import { generate } from 'randomstring';
 
 @Injectable()
 export class PostService {
@@ -41,7 +41,7 @@ export class PostService {
 
     switch (option) {
       case PostType.NEWEST:
-        sortData.createdAt = 1;
+        sortData.createdAt = -1;
         break;
       case PostType.POPULAR:
         sortData.viewCount = -1;
@@ -73,10 +73,16 @@ export class PostService {
               from: 'post_groups',
               localField: 'groupBy',
               foreignField: '_id',
-              as: 'groupBy'
+              as: 'group'
             }
           },
-          { $unwind: '$groupBy' },
+          {
+            $addFields: {
+              groupBy: {
+                $arrayElemAt: ['$group', 0]
+              }
+            }
+          },
           {
             $lookup: {
               from: 'posts_comment',
@@ -149,33 +155,35 @@ export class PostService {
 
   async getPost(slug: string, uId?: string) {
     const userId = uId && new ObjectId(uId);
-    const data = await this.postCollection
-      .aggregate([
-        {
-          $match: { slug: slug }
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'createdBy',
-            foreignField: '_id',
-            as: 'createdBy',
-            pipeline: [{ $project: { avatar: 1, name: 1 } }]
-          }
-        },
-        { $unwind: '$createdBy' },
-        {
-          $lookup: {
-            from: 'post_groups',
-            localField: 'groupBy',
-            foreignField: '_id',
-            as: 'groupBy'
-          }
-        },
-        { $unwind: '$groupBy' }
-      ])
-      .toArray();
-    const post = data[0];
+    const post = await this.postCollection.findOne({ slug });
+    // const data = await this.postCollection
+    //   .aggregate([
+    //     {
+    //       $match: { slug: slug }
+    //     },
+    //     {
+    //       $lookup: {
+    //         from: 'users',
+    //         localField: 'createdBy',
+    //         foreignField: '_id',
+    //         as: 'createdBy',
+    //         pipeline: [{ $project: { avatar: 1, name: 1 } }]
+    //       }
+    //     },
+    //     { $unwind: '$createdBy' },
+    //     {
+    //       $lookup: {
+    //         from: 'post_groups',
+    //         localField: 'groupBy',
+    //         foreignField: '_id',
+    //         as: 'groupBy'
+    //       }
+    //     },
+    //     { $unwind: '$groupBy' }
+    //   ])
+    //   .toArray();
+    // console.log('post', data)
+    // const post = data[0];
     if (!post) throw new BadRequestException({ message: 'Không tìm thấy bài viết' });
 
     const date = new Date();
@@ -183,7 +191,7 @@ export class PostService {
     const month = date.getUTCMonth() + 1;
     const year = date.getUTCFullYear();
 
-    const [viewCount, likeCount, commentCount, liked, bookmarked] = await Promise.all([
+    const [viewCount, likeCount, commentCount, liked, bookmarked, groupBy, createdBy] = await Promise.all([
       this.postViewCollection
         .aggregate([
           {
@@ -202,7 +210,9 @@ export class PostService {
       this.postLikeCollection.count({ postId: post._id }),
       this.postCommentCollection.count({ postId: post._id }),
       this.postLikeCollection.count({ postId: post._id, userId }),
-      this.postBookmarkCollection.count({ postId: post._id, userId })
+      this.postBookmarkCollection.count({ postId: post._id, userId }),
+      post.groupBy && this.postGroupCollection.findOne({ _id: new ObjectId(post.groupBy) }),
+      this.userCollection.findOne({ _id: new ObjectId(post.createdBy) }, { projection: { name: 1, avatar: 1 } })
     ]);
 
     await this.postViewCollection.updateOne(
@@ -217,8 +227,18 @@ export class PostService {
       likeCount,
       commentCount,
       liked,
-      bookmarked
+      bookmarked,
+      groupBy,
+      createdBy
     };
+  }
+
+  async getPostById(postId: string, uId: string) {
+    const userId = uId && new ObjectId(uId);
+    const post = await this.postCollection.findOne<Record<string, unknown>>({ _id: new ObjectId(postId) });
+    if (!post) throw new BadRequestException({ message: 'Không tìm thấy bài viết' });
+    if (post.groupBy) post.groupBy = await this.postGroupCollection.findOne({ _id: post.groupBy });
+    return post;
   }
 
   async likePost(pId: string, uId: string) {
@@ -290,16 +310,37 @@ export class PostService {
   }
 
   async createPost(body: any, createdBy: string) {
-    const slugTitle = slug(body.title);
+    const slugTitle = slugTool(body.title);
     const slugExist = await this.postCollection.count({ slug: slugTitle });
-
+    if (body.groupBy) body.groupBy = new ObjectId(body.groupBy);
     await this.postCollection.insertOne({
       ...body,
-      slug: !slugExist ? slugTitle : slugTitle + randomstring.generate(8),
+      slug: !slugExist ? slugTitle : slugTitle + generate(8),
       createdBy: new ObjectId(createdBy),
       createdAt: new Date()
     });
 
+    return { status: true };
+  }
+
+  async editPost(pId: string, input: any, uId: string) {
+    const postId = new ObjectId(pId);
+    const userId = new ObjectId(uId);
+
+    const postExisted = await this.postCollection.count({ _id: postId });
+    if (!postExisted) throw new BadRequestException({ message: 'Bài viết không tồn tại' });
+
+    await this.postCollection.updateOne(
+      { _id: postId },
+      { $set: { ...input, updatedAt: new Date(), updatedBy: userId } }
+    );
+    return { status: true };
+  }
+
+  async deletePost(postId: string) {
+    const postExisted = await this.postCollection.count({ _id: new ObjectId(postId) });
+    if (!postExisted) throw new BadRequestException({ message: 'Bài viết không tồn tại' });
+    await this.postCollection.deleteOne({ _id: new ObjectId(postId) });
     return { status: true };
   }
 }

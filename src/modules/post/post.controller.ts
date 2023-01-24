@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Query, Req, UseGuards, UsePipes, Body, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Patch, Req, UseGuards, UsePipes, Body, Delete } from '@nestjs/common';
 import { Role } from '../../constants';
 import { Roles } from '../../decorator/roles.decorator';
 import { MainValidationPipe } from '../../utils/validate';
@@ -26,12 +26,35 @@ export class PostController {
     return this.postService.getPost(slug, parse?.userId);
   }
 
+  @Get('by-id/:id')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  async getPostById(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.postService.getPostById(id, req.user.id);
+  }
+
   @Roles(Role.ADMIN, Role.DOCTOR)
   @UseGuards(JwtGuard, RolesGuard)
   @Post()
   createPost(@Req() req: AuthRequest, @Body() body: any) {
-    const createdBy = req.user.id
+    const createdBy = req.user.id;
     return this.postService.createPost(body, createdBy);
+  }
+
+  @Roles(Role.ADMIN, Role.DOCTOR)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Patch(':id')
+  editPost(@Req() req: AuthRequest, @Body() body: any, @Param('id') id: string) {
+    const updatedBy = req.user.id;
+    return this.postService.editPost(id, body, updatedBy);
+  }
+
+  @Roles(Role.ADMIN, Role.DOCTOR)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Delete(':id')
+  deletePost(@Req() req: AuthRequest, @Param('id') id: string) {
+    const createdBy = req.user.id;
+    return this.postService.deletePost(id);
   }
 
   @Get(':id/like')

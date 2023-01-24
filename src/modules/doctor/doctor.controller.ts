@@ -1,9 +1,10 @@
-import { AuthGuard } from '@nestjs/passport';
-import { Controller, Get, Post, UseGuards, Query, UsePipes } from '@nestjs/common';
-import { JwtGuard } from '../auth/JwtGuard';
-import { DoctorService } from './doctor.service';
-import { DoctorRequestDto } from './dto';
+import { Body, Controller, Get, Post, Query,Delete, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { MainValidationPipe } from '../../utils/validate';
+import { JwtGuard } from '../auth/JwtGuard';
+import { PostRequestDto } from '../post/dto';
+import { AuthRequest } from './../../dto/index';
+import { DoctorService } from './doctor.service';
+import { DoctorRequestDto, TimeServingCreateDto, TimeServingDeleteDto } from './dto';
 
 @Controller('doctor')
 export class DoctorController {
@@ -18,5 +19,33 @@ export class DoctorController {
   @UsePipes(new MainValidationPipe())
   getAll(@Query() query: DoctorRequestDto) {
     return this.doctorService.getAll(query);
+  }
+
+  @Get('post')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  getPosts(@Query() query: PostRequestDto, @Req() req: AuthRequest) {
+    return this.doctorService.getPosts(query, req.user.id);
+  }
+
+  @Get('time-serving')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  getTimeServing(@Req() req: AuthRequest) {
+    return this.doctorService.getTimeServing(req.user.id);
+  }
+
+  @Post('time-serving')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  createTimeServing(@Req() req: AuthRequest, @Body() body: TimeServingCreateDto) {
+    return this.doctorService.createTimeServing(req.user.id, body);
+  }
+
+  @Delete('time-serving')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  deleteTimeServing(@Req() req: AuthRequest, @Body() body: TimeServingDeleteDto) {
+    return this.doctorService.deleteTimeServing(req.user.id, body);
   }
 }
