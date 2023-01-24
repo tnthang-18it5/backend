@@ -29,8 +29,9 @@ export class PostController {
   @Roles(Role.ADMIN, Role.DOCTOR)
   @UseGuards(JwtGuard, RolesGuard)
   @Post()
-  createPost(@Req() req: any) {
-    return true;
+  createPost(@Req() req: AuthRequest, @Body() body: any) {
+    const createdBy = req.user.id
+    return this.postService.createPost(body, createdBy);
   }
 
   @Get(':id/like')

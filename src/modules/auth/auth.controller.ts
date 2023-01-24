@@ -6,6 +6,7 @@ import { AccountDto, VerifyEmailDto } from './dto';
 import { Request } from 'express';
 import { JwtGuard } from './JwtGuard';
 import { MainValidationPipe } from '../../utils/validate';
+import { Param } from '@nestjs/common/decorators';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -32,6 +33,11 @@ export class AuthController {
   @UsePipes(new MainValidationPipe())
   register(@Body() body: AccountDto) {
     return this.authService.register(body);
+  }
+
+  @Get('account-active/:email')
+  accountActive(@Param('email') email: string) {
+    return this.authService.accountActive(email);
   }
 
   @Get('verify-email')

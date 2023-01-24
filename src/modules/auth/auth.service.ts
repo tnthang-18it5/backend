@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { ObjectId } from 'mongodb';
 import { Collection, Connection } from 'mongoose';
 import { ConfigService } from '../../config';
-import { Role } from '../../constants';
+import { ERROR_ACCOUNT_CODE, Role } from '../../constants';
 import { AccountDto } from './dto';
 
 @Injectable()
@@ -83,9 +83,9 @@ export class AuthService {
       text: `Xin chào bạn!`,
       html: `<p>Nhấn vào đây <a href="${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/auth/verify-email?token=${token}">${ConfigService.getInstance().get(
+      )}/api/auth/v1/verify-email?token=${token}">${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/auth/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
+      )}/api/auth/v1/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
     });
 
     if (sendMail?.response?.includes('250'))
@@ -94,6 +94,40 @@ export class AuthService {
       };
 
     throw new BadRequestException({ message: 'Tạo tài khoản thất bại' });
+  }
+
+  async accountActive(email: string) {
+    const accountExist = await this.userCollection.findOne({ email });
+    if (!accountExist) throw new BadRequestException({ message: 'Tài khoản không tồn tại, vui lòng đăng ký' });
+    const activated = await this.userCollection.findOne({ email, verify: true });
+    if (activated) throw new BadRequestException({ message: 'Tài khoản đã được kích hoạt' });
+
+    const code = Math.round(Math.random() * 100000);
+    await this.verifyCollection.insertOne({ email, code, createdAt: new Date(), expiresIn: '24h' });
+
+    const token = this.jwtService.sign(
+      { email, code },
+      { expiresIn: '24h', secret: ConfigService.getInstance().get('JWT_SECRET') }
+    );
+
+    const sendMail = await this.mailerService.sendMail({
+      to: email,
+      from: 'tnthang.18it5@vku.udn.vn',
+      subject: 'Xác nhận tài khoản đăng ký từ hệ thống SKTT',
+      text: `Xin chào bạn!`,
+      html: `<p>Nhấn vào đây <a href="${ConfigService.getInstance().get(
+        'DOMAIN'
+      )}/api/auth/v1/verify-email?token=${token}">${ConfigService.getInstance().get(
+        'DOMAIN'
+      )}/api/auth/v1/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
+    });
+
+    if (sendMail?.response?.includes('250'))
+      return {
+        message: 'Bạn vui lòng kiểm tra email để hoàn tất đăng ký!'
+      };
+
+    throw new BadRequestException({ message: 'Kích hoạt tài khoản thất bại' });
   }
 
   async verifyEmail(token: string) {
@@ -130,7 +164,12 @@ export class AuthService {
     const comparePW = bcrypt.compareSync(password, userExist?.password);
     if (!comparePW) throw new BadRequestException({ message: 'Mật khẩu không đúng' });
 
-    if (!userExist?.verify) throw new BadRequestException({ message: 'Tài khoản chưa kích hoạt' });
+    if (!userExist?.verify)
+      throw new BadRequestException({
+        message: 'Tài khoản chưa kích hoạt',
+        code: ERROR_ACCOUNT_CODE.NOT_ACTIVATED,
+        email
+      });
 
     const payload = {
       id: userExist?._id,

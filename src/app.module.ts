@@ -8,6 +8,7 @@ import { FacebookStrategy } from './modules/auth/FacebookStrategy';
 import { JwtStrategy } from './modules/auth/JwtStrategy';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { RolesGuard } from './modules/auth/RolesGuard';
+import { HomeModule } from './modules/home/home.module';
 
 const config = ConfigService.getInstance();
 @Module({
@@ -24,7 +25,8 @@ const config = ConfigService.getInstance();
     }),
     PostModule,
     DoctorModule,
-    AuthModule
+    AuthModule,
+    HomeModule
   ],
   providers: [FacebookStrategy, JwtStrategy]
 })

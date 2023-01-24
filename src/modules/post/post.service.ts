@@ -6,6 +6,8 @@ import { getPagination } from '../../utils/pagination';
 import { searchKeyword } from '../../utils/searchKeyword';
 import { PostRequestDto } from './dto';
 import { ObjectId } from 'mongodb';
+import slug from 'slug';
+import randomstring from 'randomstring';
 
 @Injectable()
 export class PostService {
@@ -42,16 +44,16 @@ export class PostService {
         sortData.createdAt = 1;
         break;
       case PostType.POPULAR:
-        sortData.viewCount = 1;
+        sortData.viewCount = -1;
         break;
       case PostType.RATE:
-        sortData.likeCount = 1;
+        sortData.likeCount = -1;
         break;
       default:
         sortData._id = 1;
     }
 
-    const [totalRecords, posts] = await Promise.all([
+    const [totalRecords, data] = await Promise.all([
       this.postCollection.count(filter),
       this.postCollection
         .aggregate([
@@ -76,41 +78,72 @@ export class PostService {
           },
           { $unwind: '$groupBy' },
           {
+            $lookup: {
+              from: 'posts_comment',
+              localField: '_id',
+              foreignField: 'postId',
+              as: 'comments'
+            }
+          },
+          {
+            $lookup: {
+              from: 'posts_like',
+              localField: '_id',
+              foreignField: 'postId',
+              as: 'likes'
+            }
+          },
+          {
+            $lookup: {
+              from: 'posts_view',
+              localField: '_id',
+              foreignField: 'postId',
+              as: 'views',
+              pipeline: [
+                {
+                  $group: {
+                    _id: null,
+                    sum: {
+                      $sum: '$viewCount'
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            $addFields: {
+              view: {
+                $arrayElemAt: ['$views', 0]
+              }
+            }
+          },
+          {
             $project: {
               id: '$_id',
               title: 1,
               description: 1,
               createdBy: 1,
-              comments: 1,
+              commentCount: {
+                $size: '$comments'
+              },
+              likeCount: {
+                $size: '$likes'
+              },
               groupBy: 1,
               createdAt: 1,
               updatedAt: 1,
               slug: 1,
-              viewCount: 1
+              viewCount: '$view.sum'
             }
           }
         ])
+        .sort(sortData)
         .skip(skip)
         .limit(take)
-        .sort(sortData)
         .toArray()
     ]);
 
-    const data = await Promise.all(
-      posts.map(async (post) => {
-        return {
-          ...post,
-          commentCount: await this.postCommentCollection.count({ postId: post?._id }),
-          likeCount: await this.postLikeCollection.count({ postId: post?._id }),
-          viewCount: await (
-            await this.postViewCollection.find({ postId: post?._id }).toArray()
-          ).reduce((total, item) => {
-            total += item?.viewCount;
-            return total;
-          }, 0)
-        };
-      })
-    );
     return { data, totalRecords, page, size: take };
   }
 
@@ -251,6 +284,20 @@ export class PostService {
   async delComment(id: string) {
     await this.postCommentCollection.deleteOne({
       _id: new ObjectId(id)
+    });
+
+    return { status: true };
+  }
+
+  async createPost(body: any, createdBy: string) {
+    const slugTitle = slug(body.title);
+    const slugExist = await this.postCollection.count({ slug: slugTitle });
+
+    await this.postCollection.insertOne({
+      ...body,
+      slug: !slugExist ? slugTitle : slugTitle + randomstring.generate(8),
+      createdBy: new ObjectId(createdBy),
+      createdAt: new Date()
     });
 
     return { status: true };

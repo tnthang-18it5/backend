@@ -15,3 +15,9 @@ export const PostType = {
   POPULAR: 'popular',
   RATE: 'rate'
 };
+
+export const ERROR_ACCOUNT_CODE = {
+  ACTIVATED: 'Activated',
+  NOT_ACTIVATED: 'Not Activated',
+  NOT_EXISTED: 'Not existed'
+};
