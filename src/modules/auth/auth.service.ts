@@ -83,9 +83,9 @@ export class AuthService {
       text: `Xin chào bạn!`,
       html: `<p>Nhấn vào đây <a href="${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/auth/v1/verify-email?token=${token}">${ConfigService.getInstance().get(
+      )}/api/v1/auth/verify-email?token=${token}">${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/auth/v1/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
+      )}/api/v1/auth/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
     });
 
     if (sendMail?.response?.includes('250'))
@@ -117,9 +117,9 @@ export class AuthService {
       text: `Xin chào bạn!`,
       html: `<p>Nhấn vào đây <a href="${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/auth/v1/verify-email?token=${token}">${ConfigService.getInstance().get(
+      )}/api/v1/auth/verify-email?token=${token}">${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/auth/v1/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
+      )}/api/v1/auth/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
     });
 
     if (sendMail?.response?.includes('250'))
