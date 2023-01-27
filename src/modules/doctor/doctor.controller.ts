@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query,Delete, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { MainValidationPipe } from '../../utils/validate';
 import { JwtGuard } from '../auth/JwtGuard';
 import { PostRequestDto } from '../post/dto';
@@ -33,6 +33,12 @@ export class DoctorController {
   @UsePipes(new MainValidationPipe())
   getTimeServing(@Req() req: AuthRequest) {
     return this.doctorService.getTimeServing(req.user.id);
+  }
+
+  @Get('time-serving/:id')
+  @UsePipes(new MainValidationPipe())
+  getTimeServingById(@Param('id') id: string) {
+    return this.doctorService.getTimeServing(id);
   }
 
   @Post('time-serving')

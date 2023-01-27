@@ -1,13 +1,12 @@
-import { ObjectId } from 'mongodb';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
+import { ObjectId } from 'mongodb';
 import { Collection, Connection, FilterQuery } from 'mongoose';
-import { getPagination } from '../../utils/pagination';
 import { PostType, Role } from '../../constants';
-import { DoctorRequestDto, TimeServingCreateDto, TimeServingDeleteDto } from './dto';
+import { getPagination } from '../../utils/pagination';
 import { searchKeyword } from '../../utils/searchKeyword';
 import { PostRequestDto } from '../post/dto';
-
+import { DoctorRequestDto, TimeServingCreateDto, TimeServingDeleteDto } from './dto';
 @Injectable()
 export class DoctorService {
   private readonly userCollection: Collection;
@@ -15,12 +14,14 @@ export class DoctorService {
   private readonly postViewCollection: Collection;
   private readonly postLikeCollection: Collection;
   private readonly postCommentCollection: Collection;
+  private readonly scheduleCollection: Collection;
   constructor(@InjectConnection() private connection: Connection) {
     this.userCollection = this.connection.collection('users');
     this.postCollection = this.connection.collection('posts');
     this.postViewCollection = this.connection.collection('posts_view');
     this.postLikeCollection = this.connection.collection('posts_like');
     this.postCommentCollection = this.connection.collection('posts_comment');
+    this.scheduleCollection = this.connection.collection('schedules');
   }
   async getAll(input: DoctorRequestDto) {
     const { page: numPage, size, keyword } = input;

@@ -21,3 +21,9 @@ export const ERROR_ACCOUNT_CODE = {
   NOT_ACTIVATED: 'Not Activated',
   NOT_EXISTED: 'Not existed'
 };
+
+export const SCHEDULE_STATUS = {
+  COMPLETED: 'Completed',
+  CANCEL: 'Cancel',
+  PROGRESS: 'Progress'
+};
