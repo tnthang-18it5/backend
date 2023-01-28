@@ -23,7 +23,7 @@ export const ERROR_ACCOUNT_CODE = {
 };
 
 export const SCHEDULE_STATUS = {
-  COMPLETED: 'Completed',
-  CANCEL: 'Cancel',
-  PROGRESS: 'Progress'
+  COMPLETED: 'completed',
+  CANCEL: 'cancel',
+  PROGRESS: 'progress'
 };
