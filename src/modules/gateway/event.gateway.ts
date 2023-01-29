@@ -53,7 +53,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     const otherUser = [...this.server.sockets.adapter.rooms.get(room)];
 
     if (otherUser.length == 1) return;
-    this.server.to(otherUser[0]).emit('other-user', payload);
+    this.server.to(otherUser[0]).emit('other-user', { ...payload, socketId: client.id });
     // this.server.to(client.id).emit('other-user', this.users[otherUser[0]]);
   }
 
