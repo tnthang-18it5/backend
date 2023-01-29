@@ -44,12 +44,12 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
   @SubscribeMessage('join-room')
   async joinRoom(client: Socket, payload: JoinRoom) {
-    this.logger.log('join-room', payload);
+    this.logger.log('join-room', JSON.stringify(payload));
 
     const { userId, room, nickname, socketId } = payload;
     client.join(room);
 
-    this.users[client.id] = payload;
+    this.users[client.id] = { ...payload, socketId: client.id };
     const otherUser = [...this.server.sockets.adapter.rooms.get(room)];
 
     if (otherUser.length == 1) return;
@@ -60,14 +60,14 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('send-signal')
   async sendSignal(socket: Socket, payload: SendSignal) {
     const { signal, socketId } = payload;
+    this.logger.log('send-signal', 'sender:', socket.id, 'receiver:', socketId);
     this.server.to(socketId).emit('receiving-signal', { signal, sender: socket.id });
-    this.logger.log('send-signal', socketId);
   }
 
   @SubscribeMessage('re-send-signal')
   async reSendSignal(socket: Socket, payload: SendSignal) {
     const { signal, socketId } = payload;
+    this.logger.log('re-send-signal', 'sender:', socket.id, 'receiver:', socketId);
     this.server.to(socketId).emit('re-receiving-signal', { signal, sender: socket.id });
-    this.logger.log('send-signal', socketId);
   }
 }
