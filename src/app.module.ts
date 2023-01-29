@@ -11,6 +11,7 @@ import { RolesGuard } from './modules/auth/RolesGuard';
 import { HomeModule } from './modules/home/home.module';
 import { GroupModule } from './modules/group/group.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
+import { AppGateway } from './modules/gateway/event.gateway';
 
 const config = ConfigService.getInstance();
 @Module({
@@ -32,6 +33,6 @@ const config = ConfigService.getInstance();
     GroupModule,
     ScheduleModule
   ],
-  providers: [FacebookStrategy, JwtStrategy]
+  providers: [FacebookStrategy, JwtStrategy, AppGateway]
 })
 export class AppModule {}
