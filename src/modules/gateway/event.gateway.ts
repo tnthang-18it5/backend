@@ -8,7 +8,8 @@ import { Socket, Server } from 'socket.io';
 import { ConfigService } from '../../config';
 import { JoinRoom, SendSignal } from './dto';
 
-@WebSocketGateway(ConfigService.getInstance().getNumber('GATEWAY_PORT') || 5001, {
+@WebSocketGateway({
+  path: '/gateway',
   cors: true,
   transports: ['websocket']
 })
