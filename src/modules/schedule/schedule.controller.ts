@@ -27,4 +27,10 @@ export class ScheduleController {
   getAll(@Query() input: PatientRegistrationStatusDto, @Req() req: AuthRequest) {
     return this.scheduleService.getAll(req.user.id, input);
   }
+
+  @Get('room-access/:id')
+  @UseGuards(JwtGuard)
+  roomAccess(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.scheduleService.roomAccess(req.user.id, id);
+  }
 }

@@ -118,4 +118,16 @@ export class ScheduleService {
       totalRecords
     };
   }
+
+  async roomAccess(uId: string, room: string) {
+    const schedule = await this.scheduleCollection.findOne({ code: room, status: SCHEDULE_STATUS.PROGRESS });
+
+    if (!schedule) throw new BadRequestException({ message: 'Phòng khám không tồn tại hoặc đã đóng' });
+    const isUser = uId === schedule.userId?.toString();
+    const isDoctor = uId === schedule.doctorId?.toString();
+
+    if (isUser || isDoctor) return { status: true };
+
+    throw new BadRequestException({ message: 'Bạn không thể vào phòng này' });
+  }
 }

@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb';
 import { Collection, Connection } from 'mongoose';
 import { Socket, Server } from 'socket.io';
 import { ConfigService } from '../../config';
-import { JoinRoom, SendSignal } from './dto';
+import { JoinRoom, MessageDto, SendSignal } from './dto';
 
 @WebSocketGateway({
   path: '/gateway',
@@ -53,21 +53,28 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     const otherUser = [...this.server.sockets.adapter.rooms.get(room)];
 
     if (otherUser.length == 1) return;
-    this.server.to(otherUser[0]).emit('other-user', { ...payload, socketId: client.id });
-    // this.server.to(client.id).emit('other-user', this.users[otherUser[0]]);
+    this.server.to(otherUser[0]).emit('late-in', { ...payload, socketId: client.id });
+    this.server.to(client.id).emit('first-in', this.users[otherUser[0]]);
   }
 
   @SubscribeMessage('send-signal')
   async sendSignal(socket: Socket, payload: SendSignal) {
     const { signal, socketId } = payload;
-    this.logger.log('send-signal', 'sender:', socket.id, 'receiver:', socketId);
+    this.logger.log('send-signal:' + ', sender:' + socket.id + ', receiver: ' + socketId);
     this.server.to(socketId).emit('receiving-signal', { signal, sender: socket.id });
   }
 
   @SubscribeMessage('re-send-signal')
   async reSendSignal(socket: Socket, payload: SendSignal) {
     const { signal, socketId } = payload;
-    this.logger.log('re-send-signal', 'sender:', socket.id, 'receiver:', socketId);
+    this.logger.log('re-send-signal:' + ', sender:' + socket.id + ', receiver: ' + socketId);
     this.server.to(socketId).emit('re-receiving-signal', { signal, sender: socket.id });
+  }
+
+  @SubscribeMessage('send-message')
+  async sendMessage(socket: Socket, payload: MessageDto) {
+    const { message, socketId } = payload;
+    this.logger.log('send-message: ' + 'sender: ' + socket.id + ', receiver: ' + socketId);
+    this.server.to(socketId).emit('receive-message', { message, socketId: socket.id } as MessageDto);
   }
 }

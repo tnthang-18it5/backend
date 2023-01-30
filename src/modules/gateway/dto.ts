@@ -9,3 +9,8 @@ export interface SendSignal {
   signal: any;
   socketId: string;
 }
+
+export interface MessageDto {
+  message: string;
+  socketId: string;
+}
