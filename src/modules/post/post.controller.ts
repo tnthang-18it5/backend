@@ -19,6 +19,12 @@ export class PostController {
     return this.postService.getAll(query);
   }
 
+  @Get('/chart/all')
+  @UseGuards(JwtGuard)
+  viewChart(@Req() req: AuthRequest) {
+    return this.postService.viewChart(req.user.id);
+  }
+
   @Get(':slug')
   @UsePipes(new MainValidationPipe())
   async getPost(@Param('slug') slug: string, @Req() req: Request) {

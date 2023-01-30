@@ -8,6 +8,7 @@ import { PostRequestDto } from './dto';
 import { ObjectId } from 'mongodb';
 import * as slugTool from 'slug';
 import { generate } from 'randomstring';
+import * as date from 'date-and-time';
 
 @Injectable()
 export class PostService {
@@ -186,11 +187,6 @@ export class PostService {
     // const post = data[0];
     if (!post) throw new BadRequestException({ message: 'Không tìm thấy bài viết' });
 
-    const date = new Date();
-    const day = date.getUTCDate();
-    const month = date.getUTCMonth() + 1;
-    const year = date.getUTCFullYear();
-
     const [viewCount, likeCount, commentCount, liked, bookmarked, groupBy, createdBy] = await Promise.all([
       this.postViewCollection
         .aggregate([
@@ -215,9 +211,13 @@ export class PostService {
       this.userCollection.findOne({ _id: new ObjectId(post.createdBy) }, { projection: { name: 1, avatar: 1 } })
     ]);
 
+    const now = new Date();
     await this.postViewCollection.updateOne(
-      { postId: post._id, day, month, year },
-      { $inc: { viewCount: 1 } },
+      { postId: post._id },
+      {
+        $inc: { viewCount: 1 },
+        $set: { createdAt: new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) }
+      },
       { upsert: true }
     );
 
@@ -342,5 +342,57 @@ export class PostService {
     if (!postExisted) throw new BadRequestException({ message: 'Bài viết không tồn tại' });
     await this.postCollection.deleteOne({ _id: new ObjectId(postId) });
     return { status: true };
+  }
+
+  async viewChart(uId: string) {
+    const now = new Date();
+    const dayOnMonth = [];
+    for (let i = 0; i <= 30; i++) {
+      dayOnMonth.unshift(date.addDays(now, -i));
+    }
+
+    const posts = await this.postCollection.distinct('_id', { createdBy: new ObjectId(uId) });
+    const views = await this.postViewCollection
+      .aggregate([
+        {
+          $match: {
+            postId: { $in: posts },
+            createdAt: { $gte: new Date(dayOnMonth[0]) }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              createdAt: '$createdAt'
+            },
+            countView: {
+              $sum: '$viewCount'
+            }
+          }
+        }
+      ])
+      .toArray();
+
+    const labels = [];
+    const data = [];
+
+    dayOnMonth.forEach((v) => {
+      const dayFormat = date.format(v, 'DD/MM');
+      views.forEach((value) => {
+        const day = new Date(value?._id.createdAt);
+        const dF = date.format(day, 'DD/MM');
+        const viewCount = value?.countView || 0;
+
+        if (dayFormat == dF) {
+          labels.unshift(dayFormat);
+          data.unshift(viewCount);
+        } else {
+          labels.unshift(dayFormat);
+          data.unshift(0);
+        }
+      });
+    });
+
+    return { labels: labels.reverse(), data: data.reverse() };
   }
 }
