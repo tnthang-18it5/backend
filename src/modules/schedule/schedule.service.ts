@@ -56,9 +56,9 @@ export class ScheduleService {
     return data;
   }
 
-  async getAll(uId: string, input: PatientRegistrationStatusDto) {
+  async getAll(uId: string, by: string, input: PatientRegistrationStatusDto) {
     const userId = new ObjectId(uId);
-    const { option, by, page: pageNum, size } = input;
+    const { option, page: pageNum, size } = input;
     const { page, skip, take } = getPagination(pageNum, size);
 
     const filter: FilterQuery<unknown> = {};

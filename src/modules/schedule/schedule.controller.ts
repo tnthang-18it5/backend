@@ -25,7 +25,7 @@ export class ScheduleController {
   @UseGuards(JwtGuard)
   @UsePipes(new MainValidationPipe())
   getAll(@Query() input: PatientRegistrationStatusDto, @Req() req: AuthRequest) {
-    return this.scheduleService.getAll(req.user.id, input);
+    return this.scheduleService.getAll(req.user.id, req.user.role, input);
   }
 
   @Get('room-access/:id')
