@@ -3,10 +3,13 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { ObjectId } from 'mongodb';
 import { Collection, Connection, FilterQuery } from 'mongoose';
 import { generate } from 'randomstring';
-import { Role, SCHEDULE_STATUS } from '../../constants';
+import { Role, SCHEDULE_STATUS, TimeLine } from '../../constants';
 import { PatientRegistrationDto, PatientRegistrationStatusDto } from './dto';
 import { addDays } from 'date-and-time';
 import { getPagination } from '../../utils/pagination';
+import * as date from 'date-and-time';
+import { TimeLineDto } from '../../dto';
+
 @Injectable()
 export class ScheduleService {
   private readonly scheduleCollection: Collection;
@@ -129,5 +132,57 @@ export class ScheduleService {
     if (isUser || isDoctor) return { status: true };
 
     throw new BadRequestException({ message: 'Bạn không thể vào phòng này' });
+  }
+
+  async schedulesChart(uId: string, query: TimeLineDto) {
+    const now = new Date();
+    const dayOnMonth = [];
+
+    for (let i = 0; i <= TimeLine[query.timeline].day; i++) {
+      dayOnMonth.unshift(date.addDays(now, -i));
+    }
+
+    const schedules = await this.scheduleCollection
+      .aggregate([
+        {
+          $match: {
+            doctorId: new ObjectId(uId),
+            from: { $gte: new Date(dayOnMonth[0]) }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$from'
+              }
+            },
+            total: { $sum: 1 }
+          }
+        }
+      ])
+      .toArray();
+    const labels = [];
+    const data = [];
+
+    dayOnMonth.forEach((v) => {
+      const dayFormat = date.format(v, 'DD/MM');
+      schedules.forEach((value) => {
+        const day = new Date(value?._id);
+        const dF = date.format(day, 'DD/MM');
+        const count = value?.total || 0;
+
+        if (dayFormat == dF) {
+          labels.unshift(dayFormat);
+          data.unshift(count);
+        } else {
+          labels.unshift(dayFormat);
+          data.unshift(0);
+        }
+      });
+    });
+
+    return { labels: labels.reverse(), data: data.reverse() };
   }
 }

@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Req, Get, Param, UseGuards, UsePipes, Query } from '@nestjs/common';
 import { MainValidationPipe } from '../../utils/validate';
 import { JwtGuard } from '../auth/JwtGuard';
-import { AuthRequest } from './../../dto/index';
+import { AuthRequest, TimeLineDto } from './../../dto/index';
 import { PatientRegistrationDto, PatientRegistrationStatusDto } from './dto';
 import { ScheduleService } from './schedule.service';
 
@@ -32,5 +32,12 @@ export class ScheduleController {
   @UseGuards(JwtGuard)
   roomAccess(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.scheduleService.roomAccess(req.user.id, id);
+  }
+
+  @Get('chart/all')
+  @UseGuards(JwtGuard)
+  @UsePipes(new MainValidationPipe())
+  schedulesChart(@Req() req: AuthRequest, @Query() query: TimeLineDto) {
+    return this.scheduleService.schedulesChart(req.user.id, query);
   }
 }

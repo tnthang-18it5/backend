@@ -6,7 +6,7 @@ import { JwtGuard } from '../auth/JwtGuard';
 import { RolesGuard } from '../auth/RolesGuard';
 import { PostRequestDto } from './dto';
 import { PostService } from './post.service';
-import { AuthRequest } from '../../dto';
+import { AuthRequest, TimeLineDto } from '../../dto';
 import { parseToken } from '../auth/ParseToken';
 import { Request } from 'express';
 @Controller('post')
@@ -21,8 +21,9 @@ export class PostController {
 
   @Get('/chart/all')
   @UseGuards(JwtGuard)
-  viewChart(@Req() req: AuthRequest) {
-    return this.postService.viewChart(req.user.id);
+  @UsePipes(new MainValidationPipe())
+  viewChart(@Req() req: AuthRequest, @Query() query: TimeLineDto) {
+    return this.postService.viewChart(req.user.id, query);
   }
 
   @Get(':slug')

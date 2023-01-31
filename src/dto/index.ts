@@ -1,5 +1,6 @@
-import { IsNumber, IsOptional } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Request } from 'express';
+import { TIMELINE_OPTION } from '../constants';
 
 export class Pagination {
   @IsNumber()
@@ -18,4 +19,10 @@ export interface AuthRequest extends Request {
 export interface AuthPayload {
   id: string;
   role: string;
+}
+
+export class TimeLineDto {
+  @IsString()
+  @IsIn([TIMELINE_OPTION._15D, TIMELINE_OPTION._30D, TIMELINE_OPTION._3M])
+  timeline: string;
 }

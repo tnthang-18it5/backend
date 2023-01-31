@@ -1,4 +1,4 @@
-import { PostType } from './../../constants/index';
+import { PostType, TimeLine } from './../../constants/index';
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Collection, Connection, Document, FilterQuery } from 'mongoose';
@@ -9,6 +9,7 @@ import { ObjectId } from 'mongodb';
 import * as slugTool from 'slug';
 import { generate } from 'randomstring';
 import * as date from 'date-and-time';
+import { TimeLineDto } from '../../dto';
 
 @Injectable()
 export class PostService {
@@ -344,10 +345,10 @@ export class PostService {
     return { status: true };
   }
 
-  async viewChart(uId: string) {
+  async viewChart(uId: string, query: TimeLineDto) {
     const now = new Date();
     const dayOnMonth = [];
-    for (let i = 0; i <= 30; i++) {
+    for (let i = 0; i <= TimeLine[query.timeline].day; i++) {
       dayOnMonth.unshift(date.addDays(now, -i));
     }
 

@@ -27,3 +27,24 @@ export const SCHEDULE_STATUS = {
   CANCEL: 'cancel',
   PROGRESS: 'progress'
 };
+
+export const TimeLine: Record<string, { title: string; day: number }> = {
+  '15d': {
+    title: '15 ngày',
+    day: 15
+  },
+  '30d': {
+    title: '30 ngày',
+    day: 30
+  },
+  '3m': {
+    title: '3 tháng',
+    day: 90
+  }
+};
+
+export const TIMELINE_OPTION = {
+  _15D: '15d',
+  _30D: '30d',
+  _3M: '3m'
+};
