@@ -65,18 +65,25 @@ export class ScheduleService {
     const { page, skip, take } = getPagination(pageNum, size);
 
     const filter: FilterQuery<unknown> = {};
+    const sortData: FilterQuery<unknown> = {};
 
-    // if (option) filter.status = option;
-    // else filter.status = SCHEDULE_STATUS.PROGRESS;
     switch (option) {
       case SCHEDULE_STATUS.COMPLETED:
-        filter.from = { $lt: new Date() };
+        {
+          filter.from = { $lt: new Date() };
+          sortData.from = -1;
+        }
         break;
       case SCHEDULE_STATUS.CANCEL:
-        filter.status = SCHEDULE_STATUS.CANCEL;
+        {
+          filter.status = SCHEDULE_STATUS.CANCEL;
+          sortData.from = -1;
+        }
         break;
-      default:
+      default: {
         filter.from = { $gte: new Date() };
+        sortData.from = 1;
+      }
     }
 
     if (by == Role.USER) filter.userId = userId;
@@ -110,7 +117,7 @@ export class ScheduleService {
         ])
         .skip(skip)
         .limit(take)
-        .sort({ createdAt: -1 })
+        .sort(sortData)
         .toArray()
     ]);
 
