@@ -63,7 +63,7 @@ export class AuthService {
     const { email, password } = input;
 
     const emailExist = await this.userCollection.findOne({ email: email });
-    if (emailExist) throw new BadRequestException([{ field: 'email', message: 'Email đã được sử dụng' }]);
+    if (emailExist) throw new BadRequestException({ field: 'email', message: 'Email đã được sử dụng' });
 
     const passwordHashed = bcrypt.hashSync(password, 10);
     await this.userCollection.insertOne({ email, password: passwordHashed, verify: false });
@@ -159,10 +159,10 @@ export class AuthService {
     const { email, password } = input;
 
     const userExist = await this.userCollection.findOne({ email: email });
-    if (!userExist) throw new BadRequestException({ message: 'Tài khoản chưa được đăng ký' });
+    if (!userExist) throw new BadRequestException({ field: 'email', message: 'Tài khoản chưa được đăng ký' });
 
     const comparePW = bcrypt.compareSync(password, userExist?.password);
-    if (!comparePW) throw new BadRequestException({ message: 'Mật khẩu không đúng' });
+    if (!comparePW) throw new BadRequestException({ field: 'password', message: 'Mật khẩu không đúng' });
 
     if (!userExist?.verify)
       throw new BadRequestException({

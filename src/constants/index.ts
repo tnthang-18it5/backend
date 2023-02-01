@@ -19,7 +19,8 @@ export const PostType = {
 export const ERROR_ACCOUNT_CODE = {
   ACTIVATED: 'Activated',
   NOT_ACTIVATED: 'Not Activated',
-  NOT_EXISTED: 'Not existed'
+  NOT_EXISTED: 'Not existed',
+  EXISTED: 'Existed'
 };
 
 export const SCHEDULE_STATUS = {

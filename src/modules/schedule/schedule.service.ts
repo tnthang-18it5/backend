@@ -175,19 +175,19 @@ export class ScheduleService {
 
     dayOnMonth.forEach((v) => {
       const dayFormat = date.format(v, 'DD/MM');
-      schedules.forEach((value) => {
+      const hasValue = schedules.find((value) => {
         const day = new Date(value?._id);
         const dF = date.format(day, 'DD/MM');
-        const count = value?.total || 0;
-
-        if (dayFormat == dF) {
-          labels.unshift(dayFormat);
-          data.unshift(count);
-        } else {
-          labels.unshift(dayFormat);
-          data.unshift(0);
-        }
+        return dayFormat == dF;
       });
+
+      if (hasValue) {
+        labels.unshift(dayFormat);
+        data.unshift(hasValue?.total || 0);
+      } else {
+        labels.unshift(dayFormat);
+        data.unshift(0);
+      }
     });
 
     return { labels: labels.reverse(), data: data.reverse() };

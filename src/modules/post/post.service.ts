@@ -379,19 +379,19 @@ export class PostService {
 
     dayOnMonth.forEach((v) => {
       const dayFormat = date.format(v, 'DD/MM');
-      views.forEach((value) => {
+      const hasValue = views.find((value) => {
         const day = new Date(value?._id.createdAt);
         const dF = date.format(day, 'DD/MM');
-        const viewCount = value?.countView || 0;
-
-        if (dayFormat == dF) {
-          labels.unshift(dayFormat);
-          data.unshift(viewCount);
-        } else {
-          labels.unshift(dayFormat);
-          data.unshift(0);
-        }
+        return dayFormat == dF;
       });
+
+      if (hasValue) {
+        labels.unshift(dayFormat);
+        data.unshift(hasValue?.countView || 0);
+      } else {
+        labels.unshift(dayFormat);
+        data.unshift(0);
+      }
     });
 
     return { labels: labels.reverse(), data: data.reverse() };
