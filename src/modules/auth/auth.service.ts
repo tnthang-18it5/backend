@@ -7,7 +7,8 @@ import { ObjectId } from 'mongodb';
 import { Collection, Connection } from 'mongoose';
 import { ConfigService } from '../../config';
 import { ERROR_ACCOUNT_CODE, Role } from '../../constants';
-import { AccountDto } from './dto';
+import { AccountDto, ProfileUpdateDto } from './dto';
+import * as fs from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -179,5 +180,35 @@ export class AuthService {
     return {
       accessToken: this.jwtService.sign(payload, { secret: ConfigService.getInstance().get('JWT_SECRET') })
     };
+  }
+
+  async updateProfile(uId: string, input: ProfileUpdateDto) {
+    const { firstName, lastName, address, birthday, degree, experience, gender, phone, job, numberId } = input;
+    const data = {
+      name: {
+        firstName,
+        lastName
+      },
+      gender,
+      phone,
+      experience,
+      degree,
+      birthday,
+      address,
+      job,
+      numberId,
+      updatedAt: new Date()
+    };
+    await this.userCollection.findOneAndUpdate({ _id: new ObjectId(uId) }, { $set: data });
+
+    return await this.userCollection.findOne<any>(
+      { _id: new ObjectId(uId) },
+      { projection: { password: 0, updatedAt: 0 } }
+    );
+  }
+
+  async changeAvatar(uId: string, filename: string) {
+    await this.userCollection.findOneAndUpdate({ _id: new ObjectId(uId) }, { $set: { avatar: filename } });
+    return { avatar: filename };
   }
 }

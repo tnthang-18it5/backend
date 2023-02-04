@@ -63,8 +63,8 @@ export class DoctorService {
     const { page, skip, take } = getPagination(numPage, size);
     const filter: FilterQuery<unknown> = {};
     filter.createdBy = new ObjectId(doctorId);
+    filter.deletedBy = null;
     if (keyword) filter.title = searchKeyword(keyword);
-
     const sortData: FilterQuery<unknown> = {};
 
     switch (option) {

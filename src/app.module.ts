@@ -12,6 +12,8 @@ import { HomeModule } from './modules/home/home.module';
 import { GroupModule } from './modules/group/group.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
 import { AppGateway } from './modules/gateway/event.gateway';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 const config = ConfigService.getInstance();
 @Module({
@@ -25,6 +27,9 @@ const config = ConfigService.getInstance();
           pass: config.get('EMAIL_PW')
         }
       }
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', './src/public')
     }),
     PostModule,
     DoctorModule,

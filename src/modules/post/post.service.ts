@@ -1,4 +1,4 @@
-import { PostType, TimeLine } from './../../constants/index';
+import { PostType, Role, TimeLine } from './../../constants/index';
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Collection, Connection, Document, FilterQuery } from 'mongoose';
@@ -22,6 +22,7 @@ export class PostService {
   private readonly userCollection: Collection;
   private readonly postActionsCollection: Collection;
   private readonly postGroupCollection: Collection;
+  private readonly notificationCollection: Collection;
   constructor(@InjectConnection() private connection: Connection) {
     this.postCollection = this.connection.collection('posts');
     this.postViewCollection = this.connection.collection('posts_view');
@@ -31,6 +32,7 @@ export class PostService {
     this.userCollection = this.connection.collection('users');
     this.postActionsCollection = this.connection.collection('posts_action');
     this.postGroupCollection = this.connection.collection('post_groups');
+    this.notificationCollection = this.connection.collection('notifications');
   }
 
   async getAll(query: PostRequestDto) {
@@ -38,7 +40,7 @@ export class PostService {
     const { page, skip, take } = getPagination(numPage, size);
     const filter: FilterQuery<unknown> = {};
     if (keyword) filter.title = searchKeyword(keyword);
-
+    filter.deletedBy = null;
     const sortData: FilterQuery<unknown> = {};
 
     switch (option) {
@@ -157,35 +159,7 @@ export class PostService {
 
   async getPost(slug: string, uId?: string) {
     const userId = uId && new ObjectId(uId);
-    const post = await this.postCollection.findOne({ slug });
-    // const data = await this.postCollection
-    //   .aggregate([
-    //     {
-    //       $match: { slug: slug }
-    //     },
-    //     {
-    //       $lookup: {
-    //         from: 'users',
-    //         localField: 'createdBy',
-    //         foreignField: '_id',
-    //         as: 'createdBy',
-    //         pipeline: [{ $project: { avatar: 1, name: 1 } }]
-    //       }
-    //     },
-    //     { $unwind: '$createdBy' },
-    //     {
-    //       $lookup: {
-    //         from: 'post_groups',
-    //         localField: 'groupBy',
-    //         foreignField: '_id',
-    //         as: 'groupBy'
-    //       }
-    //     },
-    //     { $unwind: '$groupBy' }
-    //   ])
-    //   .toArray();
-    // console.log('post', data)
-    // const post = data[0];
+    const post = await this.postCollection.findOne({ slug, deletedBy: null });
     if (!post) throw new BadRequestException({ message: 'Không tìm thấy bài viết' });
 
     const [viewCount, likeCount, commentCount, liked, bookmarked, groupBy, createdBy] = await Promise.all([
@@ -236,7 +210,10 @@ export class PostService {
 
   async getPostById(postId: string, uId: string) {
     const userId = uId && new ObjectId(uId);
-    const post = await this.postCollection.findOne<Record<string, unknown>>({ _id: new ObjectId(postId) });
+    const post = await this.postCollection.findOne<Record<string, unknown>>({
+      _id: new ObjectId(postId),
+      deletedBy: null
+    });
     if (!post) throw new BadRequestException({ message: 'Không tìm thấy bài viết' });
     if (post.groupBy) post.groupBy = await this.postGroupCollection.findOne({ _id: post.groupBy });
     return post;
@@ -285,6 +262,7 @@ export class PostService {
         },
         { $unwind: '$createdBy' }
       ])
+      .sort({ _id: -1 })
       .toArray();
     return {
       data
@@ -338,10 +316,25 @@ export class PostService {
     return { status: true };
   }
 
-  async deletePost(postId: string) {
-    const postExisted = await this.postCollection.count({ _id: new ObjectId(postId) });
+  async deletePost(postId: string, uId: string, role: string) {
+    const postExisted = await this.postCollection.findOne({ _id: new ObjectId(postId) });
     if (!postExisted) throw new BadRequestException({ message: 'Bài viết không tồn tại' });
-    await this.postCollection.deleteOne({ _id: new ObjectId(postId) });
+
+    if (role == Role.ADMIN) {
+      await this.notificationCollection.insertOne({
+        title: 'Bài viết của bạn đã bị xoá',
+        description: 'Người quản trị đã xoá bài viết của bạn: ' + postId,
+        receiver: postExisted.createdBy,
+        isRead: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
+
+    await this.postCollection.findOneAndUpdate(
+      { _id: new ObjectId(postId) },
+      { $set: { deletedAt: new Date(), deletedBy: new ObjectId(uId) } }
+    );
     return { status: true };
   }
 
@@ -395,5 +388,145 @@ export class PostService {
     });
 
     return { labels: labels.reverse(), data: data.reverse() };
+  }
+
+  async getPostDeleted(query: PostRequestDto, uId: string, role: string) {
+    const { page: numPage, size, keyword, option } = query;
+    const { page, skip, take } = getPagination(numPage, size);
+    const filter: FilterQuery<unknown> = {};
+    if (role == Role.DOCTOR) filter.createdBy = new ObjectId(uId);
+
+    filter.deletedBy = { $ne: null };
+    if (keyword) filter.title = searchKeyword(keyword);
+    const sortData: FilterQuery<unknown> = {};
+
+    switch (option) {
+      case PostType.NEWEST:
+        sortData.createdAt = -1;
+        break;
+      case PostType.POPULAR:
+        sortData.viewCount = -1;
+        break;
+      case PostType.RATE:
+        sortData.likeCount = -1;
+        break;
+      default:
+        sortData._id = -1;
+    }
+
+    const [totalRecords, data] = await Promise.all([
+      this.postCollection.count(filter),
+      this.postCollection
+        .aggregate([
+          { $match: filter },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'createdBy',
+              foreignField: '_id',
+              as: 'createdBy',
+              pipeline: [{ $project: { avatar: 1, name: 1 } }]
+            }
+          },
+          { $unwind: '$createdBy' },
+          {
+            $lookup: {
+              from: 'post_groups',
+              localField: 'groupBy',
+              foreignField: '_id',
+              as: 'group'
+            }
+          },
+          {
+            $addFields: {
+              groupBy: {
+                $arrayElemAt: ['$group', 0]
+              }
+            }
+          },
+          {
+            $lookup: {
+              from: 'posts_comment',
+              localField: '_id',
+              foreignField: 'postId',
+              as: 'comments'
+            }
+          },
+          {
+            $lookup: {
+              from: 'posts_like',
+              localField: '_id',
+              foreignField: 'postId',
+              as: 'likes'
+            }
+          },
+          {
+            $lookup: {
+              from: 'posts_view',
+              localField: '_id',
+              foreignField: 'postId',
+              as: 'views',
+              pipeline: [
+                {
+                  $group: {
+                    _id: null,
+                    sum: {
+                      $sum: '$viewCount'
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            $addFields: {
+              view: {
+                $arrayElemAt: ['$views', 0]
+              }
+            }
+          },
+          {
+            $project: {
+              id: '$_id',
+              title: 1,
+              description: 1,
+              createdBy: 1,
+              commentCount: {
+                $size: '$comments'
+              },
+              likeCount: {
+                $size: '$likes'
+              },
+              groupBy: 1,
+              createdAt: 1,
+              updatedAt: 1,
+              slug: 1,
+              viewCount: '$view.sum'
+            }
+          }
+        ])
+        .sort(sortData)
+        .skip(skip)
+        .limit(take)
+        .toArray()
+    ]);
+
+    return { data, totalRecords, page, size: take };
+  }
+
+  async restorePost(pId: string, uId: string, role: string) {
+    const post = await this.postCollection.findOne({ _id: new ObjectId(pId) });
+    if (!post) throw new BadRequestException({ message: 'Không tìm thấy bài viết' });
+
+    const isDeleteByAdmin = await this.userCollection.findOne({ _id: post.deletedBy, role: Role.ADMIN });
+    if (isDeleteByAdmin && role != Role.ADMIN)
+      throw new BadRequestException({ message: 'Bạn không đủ quyền thực hiện hành động này' });
+
+    await this.postCollection.findOneAndUpdate(
+      { _id: new ObjectId(pId) },
+      { $set: { deletedBy: null, restoredBy: new ObjectId(uId), restoredAt: new Date(), deletedAt: null } }
+    );
+
+    return { status: true };
   }
 }

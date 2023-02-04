@@ -19,6 +19,21 @@ export class PostController {
     return this.postService.getAll(query);
   }
 
+  @Get('deleted')
+  @Roles(Role.ADMIN, Role.DOCTOR)
+  @UseGuards(JwtGuard, RolesGuard)
+  @UsePipes(new MainValidationPipe())
+  getPostDeleted(@Req() req: AuthRequest, @Query() query: PostRequestDto) {
+    return this.postService.getPostDeleted(query, req.user.id, req.user.role);
+  }
+
+  @Get('restore/:id')
+  @Roles(Role.ADMIN, Role.DOCTOR)
+  @UseGuards(JwtGuard, RolesGuard)
+  restorePost(@Req() req: AuthRequest, @Param() id: string) {
+    return this.postService.restorePost(id, req.user.id, req.user.role);
+  }
+
   @Get('/chart/all')
   @UseGuards(JwtGuard)
   @UsePipes(new MainValidationPipe())
@@ -60,8 +75,7 @@ export class PostController {
   @UseGuards(JwtGuard, RolesGuard)
   @Delete(':id')
   deletePost(@Req() req: AuthRequest, @Param('id') id: string) {
-    const createdBy = req.user.id;
-    return this.postService.deletePost(id);
+    return this.postService.deletePost(id, req.user.id, req.user.role);
   }
 
   @Get(':id/like')
