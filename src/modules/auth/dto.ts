@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class AccountDto {
   @IsNotEmpty()
@@ -30,8 +30,8 @@ export class ProfileUpdateDto {
   phone: string;
 
   @IsOptional()
-  @IsString()
-  gender: string;
+  @IsNumber()
+  gender: number;
 
   @IsOptional()
   @IsString()

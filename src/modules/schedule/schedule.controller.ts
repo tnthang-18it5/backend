@@ -40,4 +40,16 @@ export class ScheduleController {
   schedulesChart(@Req() req: AuthRequest, @Query() query: TimeLineDto) {
     return this.scheduleService.schedulesChart(req.user.id, query);
   }
+
+  @Get(':id')
+  @UseGuards(JwtGuard)
+  getSchedule(@Param('id') id: string) {
+    return this.scheduleService.getSchedule(id);
+  }
+
+  @Get('write/:id')
+  @UseGuards(JwtGuard)
+  writeMedicalRecord(@Param('id') id: string) {
+    return this.scheduleService.writeMedicalRecord(id);
+  }
 }

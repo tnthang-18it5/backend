@@ -191,8 +191,10 @@ export class AuthService {
       },
       gender,
       phone,
-      experience,
-      degree,
+      description: {
+        experience,
+        degree
+      },
       birthday,
       address,
       job,

@@ -192,4 +192,50 @@ export class ScheduleService {
 
     return { labels: labels.reverse(), data: data.reverse() };
   }
+
+  async getSchedule(id: string) {
+    const schedule = await this.scheduleCollection
+      .aggregate([
+        { $match: { _id: new ObjectId(id) } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+            pipeline: [
+              { $project: { phone: 1, numberId: 1, name: 1, job: 1, gender: 1, email: 1, birthday: 1, address: 1 } }
+            ]
+          }
+        },
+        { $unwind: '$user' },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'doctorId',
+            foreignField: '_id',
+            as: 'doctor',
+            pipeline: [
+              { $project: { phone: 1, numberId: 1, name: 1, job: 1, gender: 1, email: 1, birthday: 1, address: 1 } }
+            ]
+          }
+        },
+        { $unwind: '$doctor' }
+      ])
+      .toArray();
+    const data = schedule[0];
+    if (!data) throw new BadRequestException({ message: 'Không tìm thấy lịch khám' });
+    return { ...schedule[0], dayIn: data?.from, status: '' };
+  }
+
+  async writeMedicalRecord(id: string) {
+    const schedule = await this.scheduleCollection.count({ _id: new ObjectId(id) });
+    if (!schedule) throw new BadRequestException({ message: 'Không tìm thấy lịch khám' });
+
+    await this.scheduleCollection.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { writeRecord: true, status: SCHEDULE_STATUS.COMPLETED, completedAt: new Date() } }
+    );
+    return { status: true };
+  }
 }
