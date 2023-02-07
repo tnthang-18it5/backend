@@ -22,7 +22,7 @@ import { extname } from 'path';
 import { AuthRequest } from '../../dto';
 import { MainValidationPipe } from '../../utils/validate';
 import { AuthService } from './auth.service';
-import { AccountDto, ProfileUpdateDto, VerifyEmailDto } from './dto';
+import { AccountChangePasswordDto, AccountDto, ProfileUpdateDto, VerifyEmailDto } from './dto';
 import { JwtGuard } from './JwtGuard';
 @Controller('auth')
 export class AuthController {
@@ -101,5 +101,16 @@ export class AuthController {
   @UsePipes(new MainValidationPipe())
   login(@Body() body: AccountDto) {
     return this.authService.login(body);
+  }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() body: { email: string }) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('change-password')
+  @UsePipes(new MainValidationPipe())
+  changePassword(@Body() body: AccountChangePasswordDto) {
+    return this.authService.changePassword(body);
   }
 }

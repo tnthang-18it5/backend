@@ -7,9 +7,9 @@ import { ObjectId } from 'mongodb';
 import { Collection, Connection } from 'mongoose';
 import { ConfigService } from '../../config';
 import { ERROR_ACCOUNT_CODE, Role } from '../../constants';
-import { AccountDto, ProfileUpdateDto } from './dto';
+import { AccountChangePasswordDto, AccountDto, ProfileUpdateDto } from './dto';
 import * as fs from 'fs';
-
+import { generate } from 'randomstring';
 @Injectable()
 export class AuthService {
   private readonly userCollection: Collection;
@@ -67,7 +67,7 @@ export class AuthService {
     if (emailExist) throw new BadRequestException({ field: 'email', message: 'Email đã được sử dụng' });
 
     const passwordHashed = bcrypt.hashSync(password, 10);
-    await this.userCollection.insertOne({ email, password: passwordHashed, verify: false });
+    await this.userCollection.insertOne({ email, password: passwordHashed, verify: false, role: Role.USER });
 
     const code = Math.round(Math.random() * 100000);
     await this.verifyCollection.insertOne({ email, code, createdAt: new Date(), expiresIn: '24h' });
@@ -86,7 +86,7 @@ export class AuthService {
         'DOMAIN'
       )}/api/v1/auth/verify-email?token=${token}">${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/v1/auth/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
+      )}/api/v1/auth/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p>`
     });
 
     if (sendMail?.response?.includes('250'))
@@ -120,7 +120,7 @@ export class AuthService {
         'DOMAIN'
       )}/api/v1/auth/verify-email?token=${token}">${ConfigService.getInstance().get(
         'DOMAIN'
-      )}/api/v1/auth/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p`
+      )}/api/v1/auth/verify-email?token=${token}</a> để xác nhận đăng ký tài khoản của bạn!</p>`
     });
 
     if (sendMail?.response?.includes('250'))
@@ -154,6 +154,40 @@ export class AuthService {
       throw new BadRequestException({ message: 'Token đã được sử dụng' });
     }
     throw new BadRequestException({ message: 'Token không hợp lệ' });
+  }
+
+  async forgotPassword(email: string) {
+    const userExist = await this.userCollection.findOne({ email: email });
+    if (!userExist) throw new BadRequestException({ field: 'email', message: 'Tài khoản không tồn tại' });
+
+    const newPassword = generate({ length: 10 });
+    const passwordHashed = bcrypt.hashSync(newPassword, 10);
+
+    await this.mailerService.sendMail({
+      to: email,
+      from: 'tnthang.18it5@vku.udn.vn',
+      subject: 'Quên mật khẩu',
+      text: `Xin chào bạn!`,
+      html: `Mật khẩu mới của bạn là: ${newPassword}`
+    });
+
+    await this.userCollection.findOneAndUpdate({ email: email }, { $set: { password: passwordHashed } });
+    return { message: 'Mật khẩu mới đã được gửi vào email của bạn' };
+  }
+
+  async changePassword(input: AccountChangePasswordDto) {
+    const { email, newPassword, oldPassword } = input;
+
+    const userExist = await this.userCollection.findOne({ email: email });
+    if (!userExist) throw new BadRequestException({ field: 'email', message: 'Tài khoản không tồn tại' });
+
+    const comparePW = bcrypt.compareSync(oldPassword, userExist?.password);
+    if (!comparePW) throw new BadRequestException({ field: 'oldPassword', message: 'Mật khẩu cũ không đúng' });
+
+    const passwordHashed = bcrypt.hashSync(newPassword, 10);
+    await this.userCollection.updateOne({ email: email }, { $set: { password: passwordHashed } });
+
+    return { status: true };
   }
 
   async login(input: AccountDto) {

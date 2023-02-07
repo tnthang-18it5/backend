@@ -10,6 +10,20 @@ export class AccountDto {
   password: string;
 }
 
+export class AccountChangePasswordDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  oldPassword: string;
+
+  @IsString()
+  @IsNotEmpty()
+  newPassword: string;
+}
+
 export class VerifyEmailDto {
   @IsString()
   @IsNotEmpty()

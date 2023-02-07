@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Collection, Connection } from 'mongoose';
+import { Collection, Connection, FilterQuery } from 'mongoose';
+import { searchKeyword } from '../../utils/searchKeyword';
 import { Role } from '../../constants';
 
 @Injectable()
@@ -32,4 +33,17 @@ export class HomeService {
       slogans: [homepage?.slogan1, homepage?.slogan2]
     };
   };
+
+  async search(keyword: string) {
+    const [posts, doctors] = await Promise.all([
+      this.postCollection.find<Record<string, unknown>>({ title: searchKeyword(keyword) }).toArray(),
+      this.userCollection
+        .find<Record<string, unknown>>({
+          $or: [{ 'name.lastName': searchKeyword(keyword) }, { 'name.firstName': searchKeyword(keyword) }]
+        })
+        .toArray()
+    ]);
+
+    return { posts, doctors };
+  }
 }
