@@ -238,4 +238,9 @@ export class ScheduleService {
     );
     return { status: true };
   }
+
+  async rating(id: string, rating: number) {
+    await this.scheduleCollection.findOneAndUpdate({ _id: new ObjectId(id) }, { $set: { rating } });
+    return { status: true };
+  }
 }

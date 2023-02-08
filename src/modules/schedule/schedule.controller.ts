@@ -16,6 +16,11 @@ export class ScheduleController {
     return this.scheduleService.patientRegistration(req.user.id, body);
   }
 
+  @Post('rating/:id')
+  rating(@Body() body: { rating: number }, @Req() req: AuthRequest, @Param('id') id: string) {
+    return this.scheduleService.rating(id, body.rating);
+  }
+
   @Get('booked/:id')
   booked(@Param('id') id: string) {
     return this.scheduleService.booked(id);

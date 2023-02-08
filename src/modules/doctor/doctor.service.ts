@@ -43,6 +43,19 @@ export class DoctorService {
             $project: {
               password: 0
             }
+          },
+          {
+            $lookup: {
+              from: 'schedules',
+              localField: '_id',
+              foreignField: 'doctorId',
+              as: 'rating',
+              pipeline: [
+                {
+                  $match: { rating: { $ne: null } }
+                }
+              ]
+            }
           }
         ])
         .skip(skip)
@@ -50,8 +63,14 @@ export class DoctorService {
         .toArray()
     ]);
 
+    const newData = data.map((v) => {
+      const sum = v?.rating?.reduce((a, b) => a + b?.rating, 0);
+      const avg = sum / v?.rating?.length || 0;
+      return { ...v, rating: avg, ratingCount: v?.rating?.length || 0 };
+    });
+
     return {
-      data,
+      data: newData,
       totalRecords,
       size: take,
       page
@@ -177,7 +196,6 @@ export class DoctorService {
         .limit(take)
         .toArray()
     ]);
-
     return { data, totalRecords, page, size: take };
   }
 
