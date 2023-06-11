@@ -33,6 +33,10 @@ export class VerifyEmailDto {
 export class ProfileUpdateDto {
   @IsOptional()
   @IsString()
+  fullName: string;
+
+  @IsOptional()
+  @IsString()
   firstName: string;
 
   @IsOptional()

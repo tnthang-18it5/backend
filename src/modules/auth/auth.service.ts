@@ -223,8 +223,10 @@ export class AuthService {
   }
 
   async updateProfile(uId: string, input: ProfileUpdateDto) {
-    const { firstName, lastName, address, birthday, degree, experience, gender, phone, job, numberId } = input;
+    const { fullName, firstName, lastName, address, birthday, degree, experience, gender, phone, job, numberId } =
+      input;
     const data = {
+      fullName,
       name: {
         firstName,
         lastName

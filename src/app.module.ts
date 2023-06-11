@@ -14,6 +14,7 @@ import { ScheduleModule } from './modules/schedule/schedule.module';
 import { AppGateway } from './modules/gateway/event.gateway';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { UserModule } from './modules/user/user.module';
 
 const config = ConfigService.getInstance();
 @Module({
@@ -36,7 +37,8 @@ const config = ConfigService.getInstance();
     AuthModule,
     HomeModule,
     GroupModule,
-    ScheduleModule
+    ScheduleModule,
+    UserModule
   ],
   providers: [FacebookStrategy, JwtStrategy, AppGateway]
 })
