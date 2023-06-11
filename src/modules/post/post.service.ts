@@ -302,15 +302,15 @@ export class PostService {
     return { status: true };
   }
 
-  async editPost(pId: string, input: any, uId: string) {
-    const postId = new ObjectId(pId);
+  async editPost(slug: string, input: any, uId: string) {
+    // const postId = new ObjectId(pId);
     const userId = new ObjectId(uId);
 
-    const postExisted = await this.postCollection.count({ _id: postId });
+    const postExisted = await this.postCollection.count({ slug: slug });
     if (!postExisted) throw new BadRequestException({ message: 'Bài viết không tồn tại' });
 
     await this.postCollection.updateOne(
-      { _id: postId },
+      { slug: slug },
       { $set: { ...input, updatedAt: new Date(), updatedBy: userId } }
     );
     return { status: true };

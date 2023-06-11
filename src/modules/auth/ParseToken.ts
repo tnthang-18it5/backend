@@ -5,7 +5,7 @@ import { ConfigService } from '../../config';
 export const parseToken = async (req: Request) => {
   const token = req.headers.authorization.split(' ').pop();
   // console.log('token', token)
-  if (token == 'null') return undefined;
+  if (token === 'null' || token === 'Bearer') return undefined;
 
   const decode = await new JwtService().verifyAsync(token, {
     ignoreExpiration: false,
