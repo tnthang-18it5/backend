@@ -67,7 +67,13 @@ export class AuthService {
     if (emailExist) throw new BadRequestException({ field: 'email', message: 'Email đã được sử dụng' });
 
     const passwordHashed = bcrypt.hashSync(password, 10);
-    await this.userCollection.insertOne({ email, password: passwordHashed, verify: false, role: Role.USER });
+    await this.userCollection.insertOne({
+      email,
+      password: passwordHashed,
+      verify: false,
+      role: Role.USER,
+      avatar: 'default-avatar.jpg'
+    });
 
     const code = Math.round(Math.random() * 100000);
     await this.verifyCollection.insertOne({ email, code, createdAt: new Date(), expiresIn: '24h' });

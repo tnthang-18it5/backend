@@ -17,13 +17,14 @@ import { Param } from '@nestjs/common/decorators';
 
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { glob } from 'glob';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { AuthRequest } from '../../dto';
 import { MainValidationPipe } from '../../utils/validate';
+import { JwtGuard } from './JwtGuard';
 import { AuthService } from './auth.service';
 import { AccountChangePasswordDto, AccountDto, ProfileUpdateDto, VerifyEmailDto } from './dto';
-import { JwtGuard } from './JwtGuard';
+import { unlink } from 'node:fs/promises';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -60,12 +61,14 @@ export class AuthController {
     FileInterceptor('file', {
       storage: diskStorage({
         destination: './src/public/avatars',
-        filename: (req: AuthRequest, file, cb) => {
-          const randomName = Array(32)
-            .fill(null)
-            .map(() => Math.round(Math.random() * 16).toString(16))
-            .join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
+        filename: async (req: AuthRequest, file, cb) => {
+          const userId = req.user.id;
+          const randNumber = Math.round(Math.random() * 1000000).toString();
+          const files = await glob('**/avatars/' + userId + '*.jpg');
+          for (const file of files) {
+            unlink(file);
+          }
+          cb(null, userId + '-' + randNumber + '.jpg');
         }
       }),
       fileFilter(req, file, callback) {
