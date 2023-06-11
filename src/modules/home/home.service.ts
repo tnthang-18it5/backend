@@ -34,6 +34,30 @@ export class HomeService {
     };
   };
 
+  getSystemInfo = async () => {
+    const [postCount, userCount, doctorCount, homepage] = await Promise.all([
+      this.postCollection.count(),
+      this.userCollection.count({ role: Role.USER }),
+      this.userCollection.count({ role: Role.DOCTOR }),
+      this.homeCollection.findOne(),
+      this.homeCollection.updateOne(
+        {},
+        {
+          $inc: {
+            visitor: 1
+          }
+        }
+      )
+    ]);
+
+    return {
+      post: postCount,
+      doctor: doctorCount,
+      user: userCount,
+      visitor: homepage.visitor
+    };
+  };
+
   async search(keyword: string) {
     const [posts, doctors] = await Promise.all([
       this.postCollection.find<Record<string, unknown>>({ title: searchKeyword(keyword) }).toArray(),

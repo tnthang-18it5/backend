@@ -14,4 +14,9 @@ export class HomeController {
   search(@Query() query: { keyword: string }) {
     return this.homeService.search(query.keyword);
   }
+
+  @Get('systemInfo')
+  getSystemInfo() {
+    return this.homeService.getSystemInfo();
+  }
 }
