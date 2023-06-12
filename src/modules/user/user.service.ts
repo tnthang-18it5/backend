@@ -93,4 +93,12 @@ export class UserService {
     );
     return { status: true };
   }
+
+  async setRoleAccount(uId: string, adId: string, role: string) {
+    const userId = new ObjectId(uId);
+    const adminId = new ObjectId(adId);
+
+    await this.userCollection.findOneAndUpdate({ _id: userId }, { $set: { role: role } });
+    return { status: true };
+  }
 }

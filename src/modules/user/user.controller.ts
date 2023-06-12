@@ -1,10 +1,10 @@
-import { Controller, Get, Query, UseGuards, UsePipes, Param, Req, Patch } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UsePipes, Param, Req, Patch, Body } from '@nestjs/common';
 import { Role } from '../../constants';
 import { Roles } from '../../decorator/roles.decorator';
 import { MainValidationPipe } from '../../utils/validate';
 import { JwtGuard } from '../auth/JwtGuard';
 import { RolesGuard } from '../auth/RolesGuard';
-import { UserRequestDto } from './dto';
+import { RoleRequestDto, UserRequestDto } from './dto';
 import { UserService } from './user.service';
 import { AuthRequest } from '../../dto';
 
@@ -44,5 +44,14 @@ export class UserController {
   unlockUserAccount(@Param() userId: string, @Req() req: AuthRequest) {
     const adminId = req.user.id;
     return this.userService.unlockUserAccount(userId, adminId);
+  }
+
+  @Patch('set-role/:id')
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @UsePipes(new MainValidationPipe())
+  setRoleAccount(@Param() userId: string, @Req() req: AuthRequest, @Body() body: RoleRequestDto) {
+    const adminId = req.user.id;
+    return this.userService.setRoleAccount(userId, adminId, body.role);
   }
 }

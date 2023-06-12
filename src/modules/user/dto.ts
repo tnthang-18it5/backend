@@ -7,3 +7,8 @@ export class UserRequestDto extends Pagination {
   @IsOptional()
   keyword: string;
 }
+export class RoleRequestDto {
+  @IsString()
+  @IsOptional()
+  role: string;
+}
